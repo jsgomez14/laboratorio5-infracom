@@ -1,8 +1,10 @@
 package interfaz;
 
 import java.awt.BorderLayout;
+import java.awt.Desktop;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.util.ArrayList;
 
 import javax.swing.*;
@@ -44,23 +46,6 @@ public class FilesPanel extends JPanel implements ActionListener{
 
 	}
 
-	public void actualizarArchivos( ArrayList<String> archivos )
-	{
-		String[] lista = new String[archivos.size( )];
-		String c;
-
-		for( int i = 0; i < archivos.size( ); i++ )
-		{
-			c = (String) archivos.get( i );
-			lista[ i ] = c;
-		}
-
-		listaArchivos.removeAll( );
-		listaArchivos.setListData( lista );
-		this.repaint();
-	}
-
-
 	public int darIndex( )
 	{
 		int c = listaArchivos.getSelectedIndex( );
@@ -83,6 +68,15 @@ public class FilesPanel extends JPanel implements ActionListener{
 		//textLabel.setText("Inicia conexi�n para ver archivos");
 	}
 
+    public void actualizarArchivos( ArrayList<String> files )
+    {
+    	DefaultListModel listModel = new DefaultListModel();
+        for (String st : files)
+            listModel.addElement(st);
+        listaArchivos.setModel(listModel);
+        listaArchivos.setSelectedIndex(0);
+        repaint();
+    }
 
 	public void actionPerformed( ActionEvent evento )
 	{
@@ -95,8 +89,13 @@ public class FilesPanel extends JPanel implements ActionListener{
 			{
 				JOptionPane.showMessageDialog( this, "Debe seleccionar un archivo", "Mostrar Archivo", JOptionPane.ERROR_MESSAGE );
 				return;
+			}else{
+				try {
+	                Desktop.getDesktop().open(new File("./Recibidos/" + (String) listaArchivos.getSelectedValue()));
+	            } catch (Exception ex) {
+	                ex.printStackTrace();
+	            }
 			}
-			// ventanaPrincipal.mostrarCliente( cedula );
 		}
 
 	}

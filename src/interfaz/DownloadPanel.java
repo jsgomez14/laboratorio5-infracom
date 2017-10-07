@@ -49,15 +49,14 @@ public class DownloadPanel extends JPanel implements ActionListener {
 	    }
 
 	  
-	    public void actualizarArchivos( ArrayList files )
+	    public void actualizarArchivos( String[] files )
 	    {
-	        String[] list = new String[files.size( )];
-
-	        for( int i = 0; i < files.size( ); i++ )
-	            list[ i ] = (String) files.get(i);
-
-	        filesList.removeAll( );
-	        filesList.setListData( list );
+	    	DefaultListModel listModel = new DefaultListModel();
+	        for (String st : files)
+	            listModel.addElement(st);
+	        filesList.setModel(listModel);
+	        filesList.setSelectedIndex(0);
+	        repaint();
 	    }
 
 	   
@@ -88,7 +87,7 @@ public class DownloadPanel extends JPanel implements ActionListener {
 	                JOptionPane.showMessageDialog( this, "You have to select a file", "Show file", JOptionPane.ERROR_MESSAGE );
 	                return;
 	            }
-	            System.out.println("antes venta.descargar");
+	            System.out.println(fileName);
 	            ci.descargar();
 	        }
 	        else if( command.equals( STOP ) )

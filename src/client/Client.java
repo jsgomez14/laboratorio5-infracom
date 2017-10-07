@@ -1,36 +1,40 @@
 package client;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 
 import interfaz.ClientInterface;
 
 public class Client {
-	
+	public final static int TAM_BUFFER=16000;
+	public final static String PATH = "./Recibidos";
+
 	private Socket cs;
 	private boolean isDownloading;
 	private ClientInterface ci;
-	private DataInputStream din;
-	private DataOutputStream dout;
+	private PrintWriter pw;
 	private int index;
 	private String fileName;
 	private File currentFile;
-	
-	
+	private BufferedReader br;
+
+
+
+
 	public Client(ClientInterface clientInterface) {
+		isDownloading=true;
+		ci=clientInterface;
+
 		try {
-			Client client = new Client(clientInterface);
 			cs = new Socket(InetAddress.getByName("127.0.0.1"), 6578);
-			din = new DataInputStream(cs.getInputStream());
-			dout = new DataOutputStream(cs.getOutputStream());
-			//TODO byte[] buffer =client.createDataPacket("124".getBytes("UTF8"), currentFile.getName().getBytes("UTF8"));
-			//TODO dout.write(buffer);
+			br = new BufferedReader(new InputStreamReader(cs.getInputStream()));
+			pw = new PrintWriter( cs.getOutputStream(), true);
+
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -38,59 +42,67 @@ public class Client {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		// TODO Auto-generated constructor stub
 	}
-	
-	private byte[] createDataPacket(byte[] cmd,byte[] data) {
-		byte[] packet = null;
-		try {
-			byte[] initialize = new byte[1];
-			initialize[0]=2;
-			byte[] separator = new byte[1];
-			separator[0]=4;
-			byte[] data_length = String.valueOf(data.length).getBytes("UTF8");
-			packet = new byte[initialize.length +cmd.length+ separator.length + data_length.length];
-			
-			System.arraycopy(initialize, 0, packet, 0, initialize.length);
-			System.arraycopy(cmd, 0, packet, initialize.length, cmd.length);
 
-			System.arraycopy(data_length, 0, packet, initialize.length+cmd.length, data_length.length);
-			System.arraycopy(separator, 0, packet, initialize.length+cmd.length+data_length.length, separator.length);
-			System.arraycopy(data, 0, packet, initialize.length+cmd.length+data_length.length +separator.length, data.length);
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return packet;
-	}
-	
-	private byte[] ReadStream(DataInputStream din) {
-		byte[] data = null;
+	public String[] receiveFilesList()
+	{
 		try {
-			int b = 0;
-			String lengthBuff = "";
-			while((b=din.read()) != 4){
-				lengthBuff+=  String.valueOf(b);
-			}
-			int dataLenght= Integer.parseInt(lengthBuff);
-			data = new byte[dataLenght];
-			int byteRead = 0;
-			int byteOffset=0;
-			while(byteOffset < dataLenght) {
-				din.read(data, byteOffset, dataLenght-byteOffset);
-				byteOffset+= byteRead;
-			}
+			return br.readLine().split(":");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return data;
+		return null;
 	}
-	
-	public boolean getConnectionState() {
-		// TODO Auto-generated method stub
-		return false;
+
+	public void downloadFile(String nombre)
+	{
+		CompletableFuture.runAsync(
+				new Runnable() {
+
+					@Override
+					public void run() {
+						pw.println(nombre);
+						try {
+							long tamArchivo = Long.parseLong (br.readLine());
+							FileOutputStream fos = new FileOutputStream("./Recibidos/" + nombre);
+							BufferedOutputStream bos = new BufferedOutputStream(fos);
+							InputStream is = cs.getInputStream();
+							int recibido = 0;
+							byte[] paquete = new byte[TAM_BUFFER];
+							//Recibir el archivo
+							while (recibido < tamArchivo && isDownloading) {
+								int tamPaquete = is.read(paquete);
+								System.out.println("Paquete recibido: "+ Arrays.toString(paquete));
+								bos.write(paquete, 0, tamPaquete);
+								recibido += tamPaquete;
+							}
+							System.out.println("Se terminó de recibir el archivo "+nombre); 
+							ArrayList<String> files=actualizarDescargas();
+							ci.actualizarDescargas(files);
+							bos.close();
+							fos.close();
+						} catch (Exception e){
+							e.printStackTrace();
+						}
+					}
+				});
+
+	}
+
+	public static ArrayList<String> actualizarDescargas( )
+	{
+		File folder = new File(PATH);
+		File[] listOfFiles = folder.listFiles();
+		ArrayList<String> files= new ArrayList<String>();
+		for (int i = 0; i < listOfFiles.length; i++) {
+			if(listOfFiles[i].isFile()){
+				files.add(listOfFiles[i].getName());
+			}
+		}
+		return files;
 	}
 
 	public void fileData(String name, int i) {
@@ -102,14 +114,26 @@ public class Client {
 		if(fileName != null && cs != null && index !=-1)
 		{
 			isDownloading= true;
-	    	File file = null;
-	    	long startTime = System.currentTimeMillis();
+			File file = null;
+			long startTime = System.currentTimeMillis();
 		}
 	}
 
-	public void stopDownload() {
-		// TODO Auto-generated method stub
-		
+	public void stopDownload() 
+	{
+		isDownloading=false;
+	}
+
+	public static ArrayList<String> getFiles(String path){
+		File folder = new File(path);
+		File[] listOfFiles = folder.listFiles();
+		ArrayList<String> files= new ArrayList<String>();
+		for (int i = 0; i < listOfFiles.length; i++) {
+			if(listOfFiles[i].isFile()){
+				files.add(listOfFiles[i].getName());
+			}
+		}
+		return files;
 	}
 
 }

@@ -20,7 +20,7 @@ public class ClientInterface extends JFrame {
 	FilesPanel filesPanel;
 	DownloadPanel downloadPanel;
 	ConnectionPanel connectionPanel;
-	private ArrayList<String> filesList;
+	private String[] filesList;
 
 	public ClientInterface( )
 	{
@@ -46,12 +46,24 @@ public class ClientInterface extends JFrame {
 	{
 		JOptionPane.showMessageDialog(null, "Iniciando conexión");
 		client = new Client(this);
-		//TODO filesList = client.init();
+		filesList = client.receiveFilesList();
 		JOptionPane.showMessageDialog(null, "Se ha establecido conexi�n");
 		connectionPanel.changeState();
 		downloadPanel.actualizarArchivos(filesList);
+		pack();
+		repaint();
+		setVisible(true);
 		System.out.println("Files are up to date");
 	}
+	
+	public void actualizarDescargas(ArrayList<String> files)
+	{
+		filesPanel.actualizarArchivos(files);
+		pack();
+		repaint();
+		setVisible(true);
+	}
+	
 
 	public void closeConnection(){
 		//TODO client.closeConn();
@@ -65,24 +77,8 @@ public class ClientInterface extends JFrame {
 	}
 
 	public void descargar(){
-		System.out.println("entrada descargar");
-		if(!client.getConnectionState())
-		{
-			JOptionPane.showMessageDialog(null, "Debe iniciar sesi�n primero");
-			return;
-		}
 		String name = downloadPanel.getSelectedFile();
-		int selected = downloadPanel.getIndex();
-		System.out.println("despues de name y select"); //TODO borrar
-
-		if (selected==-1) JOptionPane.showMessageDialog(this, "Select a file", "Error", JOptionPane.ERROR_MESSAGE);
-		if (selected==0) JOptionPane.showMessageDialog(this, "Select just one file", "Error", JOptionPane.ERROR_MESSAGE);
-		else{
-			client.fileData(name, selected);
-			
-			client.start();
-			System.out.println("started client thread");
-		}
+		client.downloadFile(name);
 
 
 	}
